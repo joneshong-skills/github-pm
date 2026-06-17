@@ -17,7 +17,7 @@
 
 ## Features
 
-- **Issue Lifecycle Management** -- Create, start, sync, and close issues through slash commands
+- **Issue Lifecycle Management** -- Create, start, sync, and close issues through natural language
 - **Blueprint-to-Issues Pipeline** -- Automatically generate linked issues from blueprint documents
 - **Worktree Integration** -- Start work on an issue with automatic branch and worktree creation
 - **Progress Sync** -- Push progress updates to issues via commit references and comments
@@ -26,28 +26,30 @@
 
 ## Usage
 
-### Commands
+### Actions
 
-| Command | Purpose |
-|---------|---------|
-| `/pm:create` | Create issues from blueprint or description |
-| `/pm:list` | List open issues grouped by status |
-| `/pm:next` | Suggest next priority task |
-| `/pm:start` | Begin work on issue (worktree + label) |
-| `/pm:sync` | Push progress update to issue |
-| `/pm:close` | Close issue with summary |
-| `/pm:status` | Project dashboard |
+Triggered by natural language, not slash commands -- describe the intent and the skill runs the matching action via the `gh` CLI.
+
+| Action | Trigger phrase (example) | Purpose |
+|--------|--------------------------|---------|
+| create | "create an issue for X" | Create issues from blueprint or description |
+| list   | "list open issues" | List open issues grouped by status |
+| next   | "what's the next task?" | Suggest next priority task |
+| start  | "start work on #42" | Begin work on issue (worktree + label) |
+| sync   | "sync progress to #42" | Push progress update to issue |
+| close  | "close #42 with a summary" | Close issue with summary |
+| status | "show the project dashboard" | Project dashboard |
 
 ### Examples
 
 ```
-/pm:create docs/plans/feature-x-blueprint.md
+"Create issues from docs/plans/feature-x-blueprint.md"
 
-/pm:start #42
+"Start work on issue #42"
 
-/pm:sync #42
+"Sync my progress to issue #42"
 
-/pm:status
+"Show the project status"
 ```
 
 ## Workflow
@@ -56,16 +58,16 @@
 Backlog --> Open --> In Progress --> Reviewed --> Closed
 ```
 
-1. **Create** -- Generate issues from blueprints or descriptions (`/pm:create`)
-2. **Start** -- Pick up an issue, create worktree and branch (`/pm:start`)
-3. **Sync** -- Push progress updates during development (`/pm:sync`)
-4. **Close** -- Complete issue with summary (`/pm:close`)
+1. **Create** -- Generate issues from blueprints or descriptions
+2. **Start** -- Pick up an issue, create worktree and branch
+3. **Sync** -- Push progress updates during development
+4. **Close** -- Complete issue with summary
 
 ## Integration
 
 | Skill | Relationship |
 |-------|-------------|
-| `blueprint` | `/pm:create <blueprint>` auto-creates linked issues |
+| `blueprint` | hand it a blueprint to auto-create linked issues |
 | `forge` | Each forge stage maps to issue lifecycle |
 | `git-worktrees` | Branch naming: `feature/<slug>-#<number>` |
 | `executor` | Progress sync on each phase completion |
