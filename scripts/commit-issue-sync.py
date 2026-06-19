@@ -10,9 +10,36 @@ Output: JSON with status (always exits 0)
 """
 
 import json
+import os
 import re
+import sqlite3
 import subprocess
 import sys
+
+
+def should_post(issue, commit_hash, db_path):
+    """Return True the first time (issue, commit_hash) is seen, False after.
+
+    Records the pair in a SQLite dedup table. Re-triggered hooks (rebase /
+    amend / hook replay) on the same commit then skip re-commenting.
+    """
+    # ponytail: keyed on git short hash; if we switch to squash-merge the
+    # hash drifts, so re-key on (issue, first-line) when that happens.
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS comment_dedup "
+            "(issue TEXT, commit_hash TEXT, UNIQUE(issue, commit_hash))"
+        )
+        cursor = conn.execute(
+            "INSERT OR IGNORE INTO comment_dedup (issue, commit_hash) VALUES (?, ?)",
+            (issue, commit_hash),
+        )
+        conn.commit()
+        return cursor.rowcount != 0
+    finally:
+        conn.close()
 
 
 def main():
@@ -47,7 +74,9 @@ def main():
     ).stdout.strip()
 
     # Extract issue references (#N, Refs #N, Closes #N, Fixes #N)
-    issue_numbers = set(re.findall(r"(?:Closes|Fixes|Refs|Part of|#)\s*#?(\d+)", commit_msg))
+    issue_numbers = set(
+        re.findall(r"(?:Closes|Fixes|Refs|Part of|#)\s*#?(\d+)", commit_msg)
+    )
 
     # Also check branch name for issue reference
     branch = subprocess.run(
@@ -65,17 +94,22 @@ def main():
 
     # Post comment on each referenced issue
     repo = "JonesHong/workshop"
+    db_path = os.path.expanduser("~/.claude/data/github-pm/comment_dedup.db")
+    posted = []
     for num in issue_numbers:
+        if not should_post(num, commit_hash, db_path):
+            continue
         comment = f"Commit `{commit_hash}`: {commit_msg.split(chr(10))[0]}"
         subprocess.run(
             ["gh", "issue", "comment", num, "--repo", repo, "--body", comment],
             capture_output=True,
         )
+        posted.append(num)
 
     json.dump(
         {
             "status": "synced",
-            "issues": list(issue_numbers),
+            "issues": posted,
             "commit": commit_hash,
         },
         sys.stdout,
