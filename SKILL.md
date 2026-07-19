@@ -3,6 +3,7 @@ name: github-pm
 description: "pm, github, create, project, issue, manage, tasks, 建 issue, 開 GitHub issue, 查看 backlog"
 version: 0.1.0
 tools: Bash
+disable-model-invocation: true
 ---
 
 # GitHub PM
