@@ -17,6 +17,29 @@ import subprocess
 import sys
 
 
+def _repo_from_git_remote() -> str:
+    """Derive owner/repo from the current checkout's origin.
+
+    The repo used to be hardcoded, which meant anyone running this pointed it at
+    someone else's project. Set GITHUB_PM_REPO to override; otherwise this reads
+    whatever checkout you are standing in.
+    """
+    try:
+        url = subprocess.run(
+            ["git", "remote", "get-url", "origin"],
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
+    except Exception:
+        raise SystemExit(
+            "Cannot determine the target repo: set GITHUB_PM_REPO, "
+            "or run this from a checkout that has an origin remote."
+        )
+    m = re.search(r"[:/]([^/:]+/[^/]+?)(?:\.git)?$", url)
+    if not m:
+        raise SystemExit(f"Could not parse owner/repo out of origin url: {url}")
+    return m.group(1)
+
+
 def should_post(issue, commit_hash, db_path):
     """Return True the first time (issue, commit_hash) is seen, False after.
 
@@ -93,7 +116,7 @@ def main():
         return
 
     # Post comment on each referenced issue
-    repo = "JonesHong/workshop"
+    repo = os.environ.get("GITHUB_PM_REPO") or _repo_from_git_remote()
     db_path = os.path.expanduser("~/.claude/data/github-pm/comment_dedup.db")
     posted = []
     for num in issue_numbers:

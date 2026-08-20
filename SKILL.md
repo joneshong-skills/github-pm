@@ -60,4 +60,4 @@ Integrates with blueprint, forge, executor, and git-worktrees skills.
 
 ## Repo
 
-GitHub: `JonesHong/workshop` (private)
+GitHub: the repo you set in `GITHUB_PM_REPO` (falls back to the current checkout's origin)

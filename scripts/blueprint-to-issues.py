@@ -18,12 +18,36 @@ The script:
 7. Outputs a summary table
 """
 
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 
-REPO = "JonesHong/workshop"
+
+def _repo_from_git_remote() -> str:
+    """Derive owner/repo from the current checkout's origin.
+
+    The repo used to be hardcoded, which meant anyone running this pointed it at
+    someone else's project. Set GITHUB_PM_REPO to override; otherwise this reads
+    whatever checkout you are standing in.
+    """
+    try:
+        url = subprocess.run(
+            ["git", "remote", "get-url", "origin"],
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
+    except Exception:
+        raise SystemExit(
+            "Cannot determine the target repo: set GITHUB_PM_REPO, "
+            "or run this from a checkout that has an origin remote."
+        )
+    m = re.search(r"[:/]([^/:]+/[^/]+?)(?:\.git)?$", url)
+    if not m:
+        raise SystemExit(f"Could not parse owner/repo out of origin url: {url}")
+    return m.group(1)
+
+REPO = os.environ.get("GITHUB_PM_REPO") or _repo_from_git_remote()
 
 
 def run_gh(args: list[str]) -> str:
